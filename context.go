@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/seletskiy/go-log"
-
 	"github.com/go-chi/chi"
 	"github.com/reconquest/karma-go"
 	"github.com/xtgo/uuid"
@@ -35,7 +33,7 @@ func NewContext(
 	writer http.ResponseWriter,
 	request *http.Request,
 ) *Context {
-	id := hex.EncodeToString(uuid.NewRandom().Bytes())
+	id := "req_" + hex.EncodeToString(uuid.NewRandom().Bytes())
 
 	ctx := &Context{
 		Context: karma.Describe("request_id", id),
@@ -108,6 +106,8 @@ func (context *Context) Describe(key string, value string) *Context {
 }
 
 func (context *Context) OK() error {
+	context.writer.WriteHeader(http.StatusOK)
+
 	return nil
 }
 
@@ -160,25 +160,24 @@ func (context *Context) Error(
 	message string,
 	values ...interface{},
 ) error {
-	// log error but do not return it
-	log.Errorf(err, message, values...)
-
 	context.writer.WriteHeader(code)
 
-	// do not send nested error to http client
-	err = json.NewEncoder(context.writer).Encode(struct {
-		RequestID string `json:"request_id"`
-		Error     string `json:"error"`
-	}{
-		RequestID: context.id,
-		Error:     fmt.Sprintf(message, values...),
-	})
-	if err != nil {
-		return karma.Format(
-			err,
-			"unable to marshal error",
-		)
+	{
+		// do not send nested error to http client
+		err := json.NewEncoder(context.writer).Encode(struct {
+			RequestID string `json:"request_id"`
+			Error     string `json:"error"`
+		}{
+			RequestID: context.id,
+			Error:     fmt.Sprintf(message, values...),
+		})
+		if err != nil {
+			return karma.Format(
+				err,
+				"unable to marshal error",
+			)
+		}
 	}
 
-	return context.Format(nil, message, values...)
+	return context.Format(err, message, values...)
 }

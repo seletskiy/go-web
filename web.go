@@ -27,8 +27,9 @@ func New(router chi.Router) *Web {
 	}
 
 	web.Use(gziphandler.MustNewGzipLevelHandler(gzip.BestCompression))
-	web.Use(web.recover)
-	web.Use(web.log)
+	web.Use(web.init)
+	web.Use(web.Middleware(web.log))
+	web.Use(web.Middleware(web.recover))
 
 	return &web
 }
@@ -44,81 +45,128 @@ func (web *Web) Route(pattern string, fn func(mux *Web)) *Web {
 	}
 }
 
+func (web *Web) Middleware(
+	middleware func(Handler) Handler,
+) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return web.ServeHandler(
+			middleware(
+				func(context *Context) error {
+					next.ServeHTTP(context.GetWriter(), context.GetRequest())
+					return context.err
+				},
+			),
+		)
+	}
+}
+
+func (web *Web) With(middlewares ...func(Handler) Handler) *Web {
+	var proxies []func(http.Handler) http.Handler
+
+	for _, middleware := range middlewares {
+		proxies = append(
+			proxies,
+			web.Middleware(middleware),
+		)
+	}
+
+	return &Web{
+		Router: web.Router.With(proxies...),
+	}
+}
+
 func (web *Web) ServeHandler(handler Handler) http.HandlerFunc {
 	return func(
 		writer http.ResponseWriter,
 		request *http.Request,
 	) {
-		context := NewContext(writer, request)
+		context := request.Context().Value(ContextKey).(*Context)
 		context.err = handler(context)
 	}
 }
 
-func (web *Web) log(next http.Handler) http.Handler {
+func (web *Web) init(next http.Handler) http.Handler {
 	return http.HandlerFunc(
-		func(writer http.ResponseWriter, request *http.Request) {
-			var (
-				started = time.Now()
-				scribe  = middleware.NewWrapResponseWriter(
-					writer,
-					request.ProtoMajor,
-				)
-			)
-
-			next.ServeHTTP(scribe, request)
-			duration := time.Since(started)
-
-			logger := func(message string, args ...interface{}) {
-				log.Debugf(nil, message, args...)
-			}
-
-			context := request.Context().Value(ContextKey)
-
-			if context != nil {
-				err := context.(*Context).err
-				if err != nil {
-					logger = func(message string, args ...interface{}) {
-						if scribe.Status() >= 500 {
-							log.Errorf(err, message, args...)
-						} else {
-							log.Warningf(err, message, args...)
-						}
-					}
-				}
-			}
-
-			logger(
-				"{http} %v %4v %v | %.6f %v",
-				scribe.Status(),
-				request.Method,
-				request.URL.String(),
-				duration.Seconds(),
-				request.RemoteAddr,
-			)
+		func(
+			writer http.ResponseWriter,
+			request *http.Request,
+		) {
+			context := NewContext(writer, request)
+			next.ServeHTTP(writer, context.request)
 		},
 	)
 }
 
-func (web *Web) recover(next http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(writer http.ResponseWriter, request *http.Request) {
-			defer func() {
-				if err := recover(); err != nil {
-					dump, _ := httputil.DumpRequest(request, false)
+func (web *Web) log(next Handler) Handler {
+	return func(context *Context) error {
+		var (
+			request = context.GetRequest()
+			scribe  = middleware.NewWrapResponseWriter(
+				context.GetWriter(),
+				request.ProtoMajor,
+			)
+		)
 
-					err := karma.
+		context.writer = scribe
+
+		var (
+			started  = time.Now()
+			err      = next(context)
+			duration = time.Since(started)
+		)
+
+		logger(
+			scribe.Status(),
+			err,
+			"{http} %v %4v %v | %.6f %v | %s",
+			scribe.Status(),
+			request.Method,
+			request.URL.String(),
+			duration.Seconds(),
+			request.RemoteAddr,
+			context.id,
+		)
+
+		return err
+	}
+}
+
+func (web *Web) recover(next Handler) Handler {
+	return func(context *Context) (err error) {
+		defer func() {
+			if cause := recover(); cause != nil {
+				var (
+					request = context.GetRequest()
+					dump, _ = httputil.DumpRequest(request, false)
+				)
+
+				err = context.Error(
+					http.StatusInternalServerError,
+					karma.
 						Describe("client", request.RemoteAddr).
 						Describe("request", strings.TrimSpace(string(dump))).
 						Describe("stack", stack(3)).
-						Reason(err)
+						Reason(cause),
+					"panic while serving %s",
+					request.URL,
+				)
+			}
+		}()
 
-					log.Errorf(err, "panic while serving %s", request.URL)
-				}
-			}()
+		return next(context)
+	}
+}
 
-			next.ServeHTTP(writer, request)
-		},
-	)
+func logger(code int, err error, message string, args ...interface{}) {
+	if code >= 500 {
+		log.Errorf(err, message, args...)
+	} else {
+		if err != nil {
+			log.Warningf(err, message, args...)
+		} else {
+			log.Debugf(nil, message, args...)
+		}
+	}
 }
 
 func stack(skip int) string {
