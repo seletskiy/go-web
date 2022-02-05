@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +10,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/reconquest/karma-go"
-	"github.com/xtgo/uuid"
+	"github.com/rs/xid"
 )
 
 type Context struct {
@@ -33,7 +32,7 @@ func NewContext(
 	writer http.ResponseWriter,
 	request *http.Request,
 ) *Context {
-	id := "req_" + hex.EncodeToString(uuid.NewRandom().Bytes())
+	id := "req_" + xid.New().String()
 
 	ctx := &Context{
 		Context: karma.Describe("request_id", id),

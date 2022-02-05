@@ -19,14 +19,14 @@ github.com/reconquest/karma-go v0.0.0-20211029072727-6027c6225ce4 h1:HuM4N4Zliq6
 github.com/reconquest/karma-go v0.0.0-20211029072727-6027c6225ce4/go.mod h1:0SJV7OD+RmNxn0wsLWXQIVYiKS3szqhFv5PQvjLX2Ds=
 github.com/reconquest/loreley v0.0.0-20200601121626-621c1cd37fd1 h1:J1vuEtEaaHo01+gxE6jIMtTwLrYzsraHmnqbNvha2Jw=
 github.com/reconquest/loreley v0.0.0-20200601121626-621c1cd37fd1/go.mod h1:1NF/j951kWm+ZnRXpOkBqweImgwhlzFVwTA4A0V7TEU=
+github.com/rs/xid v1.3.0 h1:6NjYksEUlhurdVehpc7S7dk6DAmcKv8V9gG0FsVN2U4=
+github.com/rs/xid v1.3.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=
 github.com/seletskiy/go-log v0.0.0-20220130002142-0067d237d586 h1:LWKjO7Z2AYHQRv0PQIkjDT0Tw/SNlWXO/o8SuZkMlZ4=
 github.com/seletskiy/go-log v0.0.0-20220130002142-0067d237d586/go.mod h1:QVn1WXNib2ioBUxh4HeQOJ3qaT65TFObN7rCPiM3Hto=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c h1:3lbZUMbMiGUW/LMkfsEABsc5zNT9+b1CvsJx47JzJ8g=
-github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c/go.mod h1:UrdRz5enIKZ63MEE3IF9l2/ebyx59GyGgPi+tICQdmM=
 github.com/zazab/zhash v0.0.0-20210630080733-6e809466f8d3 h1:BhVaeQJc3xalHGONn215FylzuxdQBIT3d/aRjDg4nXQ=
 github.com/zazab/zhash v0.0.0-20210630080733-6e809466f8d3/go.mod h1:NtepZ8TEXErPsmQDMUoN72f8aIy4+xNinSJ3f1giess=
 golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 h1:HWj/xjIHfjYU5nVXpTM0s39J9CbLn7Cc5a7IC5rwsMQ=
